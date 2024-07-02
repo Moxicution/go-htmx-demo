@@ -12,6 +12,7 @@ type Note struct {
 	ID          int       `json:"id,omitempty"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
+	Rating      int       `json:"rating"`
 	Completed   bool      `json:"completed,omitempty"`
 	CreatedAt   time.Time `json:"created_at,omitempty"`
 }
@@ -20,6 +21,7 @@ type ConvertedNote struct {
 	ID          int    `json:"id,omitempty"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	Rating      int    `json:"rating"`
 	Completed   bool   `json:"completed,omitempty"`
 	CreatedAt   string `json:"created_at,omitempty"`
 }
@@ -27,8 +29,8 @@ type ConvertedNote struct {
 func (n *Note) CreateNote() (Note, error) {
 	db := GetConnection()
 
-	query := `INSERT INTO notes (title, description, created_at)
-		VALUES(?, ?, ?) RETURNING *`
+	query := `INSERT INTO notes (title, description, rating, created_at)
+		VALUES(?, ?, ?, ?) RETURNING *`
 
 	stmt, err := db.Prepare(query)
 	if err != nil {
@@ -41,11 +43,13 @@ func (n *Note) CreateNote() (Note, error) {
 	err = stmt.QueryRow(
 		n.Title,
 		n.Description,
+		n.Rating,
 		time.Now().UTC(),
 	).Scan(
 		&newNote.ID,
 		&newNote.Title,
 		&newNote.Description,
+		&newNote.Rating,
 		&newNote.Completed,
 		&newNote.CreatedAt,
 	)
@@ -73,7 +77,7 @@ func (n *Note) GetAllNotes(offset int) ([]Note, error) {
 
 	notes := []Note{}
 	for rows.Next() {
-		rows.Scan(&n.ID, &n.Title, &n.Description, &n.Completed, &n.CreatedAt)
+		rows.Scan(&n.ID, &n.Title, &n.Description, &n.Rating, &n.Completed, &n.CreatedAt)
 
 		notes = append(notes, *n)
 	}
@@ -101,6 +105,7 @@ func (n *Note) GetNoteById() (Note, error) {
 		&recoveredNote.ID,
 		&recoveredNote.Title,
 		&recoveredNote.Description,
+		&recoveredNote.Rating,
 		&recoveredNote.Completed,
 		&recoveredNote.CreatedAt,
 	)
@@ -132,6 +137,7 @@ func (n *Note) UpdateNote() (Note, error) {
 		&updatedNote.ID,
 		&updatedNote.Title,
 		&updatedNote.Description,
+		&updatedNote.Rating,
 		&updatedNote.Completed,
 		&updatedNote.CreatedAt,
 	)
@@ -173,6 +179,7 @@ func convertDateTime(note Note, timeZone string) ConvertedNote {
 		ID:          note.ID,
 		Title:       note.Title,
 		Description: note.Description,
+		Rating:      note.Rating,
 		Completed:   note.Completed,
 		CreatedAt:   note.CreatedAt.In(loc).Format(time.RFC822Z),
 	}

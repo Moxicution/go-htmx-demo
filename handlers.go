@@ -87,20 +87,34 @@ func AddNote(w http.ResponseWriter, r *http.Request) {
 
 	title := strings.Trim(r.PostFormValue("title"), " ")
 	description := strings.Trim(r.PostFormValue("description"), " ")
-	if len(title) == 0 || len(description) == 0 {
-		var errTitle, errDescription string
+
+	dirtyRating := strings.Trim(r.PostFormValue("rating"), " ")
+	rating, err := strconv.Atoi(dirtyRating)
+	if err != nil {
+		log.Fatalf("something went wrong: %s", err.Error())
+	}
+
+	if len(title) == 0 || len(description) == 0 || rating < 0 || rating > 5 {
+
+		var errTitle, errDescription, errRating string
+
 		if len(title) == 0 {
 			errTitle = "Please enter a title in this field"
 		}
 		if len(description) == 0 {
 			errDescription = "Please enter a description in this field"
 		}
+		if rating < 0 || rating > 5 {
+			errRating = "Please enter a rating"
+		}
 
 		data := map[string]string{
 			"FormTitle":       title,
 			"FormDescription": description,
+			"FormRating":      dirtyRating,
 			"ErrTitle":        errTitle,
 			"ErrDescription":  errDescription,
+			"ErrRating":       errRating,
 		}
 
 		w.Header().Set("HX-Retarget", "form")
@@ -113,7 +127,9 @@ func AddNote(w http.ResponseWriter, r *http.Request) {
 	newNote := new(Note)
 	newNote.Title = title
 	newNote.Description = description
-	_, err := newNote.CreateNote()
+	newNote.Rating = rating
+
+	_, err = newNote.CreateNote()
 	if err != nil {
 		var message string
 
