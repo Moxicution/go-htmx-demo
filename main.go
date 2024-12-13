@@ -6,7 +6,10 @@ import (
 )
 
 func init() {
-	MakeMigrations()
+	err := MakeMigrations()
+	if err != nil {
+		log.Fatalf("something went wrong: %s", err.Error())
+	}
 }
 
 func main() {
@@ -23,7 +26,7 @@ func main() {
 
 	log.Println("🚀 Starting up on port 3000")
 
-	log.Fatal(http.ListenAndServe(":3000", nil))
+	log.Fatal(http.ListenAndServe("localhost:3000", nil))
 }
 
 /* REFERENCES:

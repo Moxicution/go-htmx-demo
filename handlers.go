@@ -1,3 +1,4 @@
+// My package
 package main
 
 import (
@@ -28,7 +29,8 @@ func init() {
 	}
 }
 
-func ShowHomePage(w http.ResponseWriter, r *http.Request) {
+// ShowHomePage shows the home page
+func ShowHomePage(w http.ResponseWriter, _ *http.Request) {
 	year := time.Now().Year()
 
 	data := map[string]any{
@@ -36,10 +38,14 @@ func ShowHomePage(w http.ResponseWriter, r *http.Request) {
 		"Year":  year,
 	}
 
-	tmpl.ExecuteTemplate(w, "index.html", data)
+	err := tmpl.ExecuteTemplate(w, "index.html", data)
+	if err != nil {
+		log.Fatalf("something went wrong: %s", err.Error())
+	}
 }
 
-func ShowAboutPage(w http.ResponseWriter, r *http.Request) {
+// ShowAboutPage shows the about page
+func ShowAboutPage(w http.ResponseWriter, _ *http.Request) {
 	year := time.Now().Year()
 
 	data := map[string]any{
@@ -47,9 +53,13 @@ func ShowAboutPage(w http.ResponseWriter, r *http.Request) {
 		"Year":  year,
 	}
 
-	tmpl.ExecuteTemplate(w, "about.html", data)
+	err := tmpl.ExecuteTemplate(w, "about.html", data)
+	if err != nil {
+		log.Fatalf("something went wrong: %s", err.Error())
+	}
 }
 
+// GetNotes gets the Notes
 func GetNotes(w http.ResponseWriter, r *http.Request) {
 	// time.Sleep(500 * time.Millisecond) // only to check how the spinner works
 
@@ -80,13 +90,17 @@ func GetNotes(w http.ResponseWriter, r *http.Request) {
 		"ShowMore": len(convertedNotes) == 5,
 	}
 
-	tmpl.ExecuteTemplate(w, "note-list", data)
+	err = tmpl.ExecuteTemplate(w, "note-list", data)
+	if err != nil {
+		log.Fatalf("something went wrong: %s", err.Error())
+	}
 }
 
+// AddNote adds a Note
 func AddNote(w http.ResponseWriter, r *http.Request) {
 
 	title := strings.Trim(r.PostFormValue("title"), " ")
-	description := strings.Trim(r.PostFormValue("description"), " ")
+	desc := strings.Trim(r.PostFormValue("description"), " ")
 
 	dirtyRating := strings.Trim(r.PostFormValue("rating"), " ")
 	rating, err := strconv.Atoi(dirtyRating)
@@ -94,14 +108,14 @@ func AddNote(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("something went wrong: %s", err.Error())
 	}
 
-	if len(title) == 0 || len(description) == 0 || rating < 0 || rating > 5 {
+	if len(title) == 0 || len(desc) == 0 || rating < 0 || rating > 5 {
 
 		var errTitle, errDescription, errRating string
 
 		if len(title) == 0 {
 			errTitle = "Please enter a title in this field"
 		}
-		if len(description) == 0 {
+		if len(desc) == 0 {
 			errDescription = "Please enter a description in this field"
 		}
 		if rating < 0 || rating > 5 {
@@ -110,7 +124,7 @@ func AddNote(w http.ResponseWriter, r *http.Request) {
 
 		data := map[string]string{
 			"FormTitle":       title,
-			"FormDescription": description,
+			"FormDescription": desc,
 			"FormRating":      dirtyRating,
 			"ErrTitle":        errTitle,
 			"ErrDescription":  errDescription,
@@ -119,14 +133,16 @@ func AddNote(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("HX-Retarget", "form")
 		w.Header().Set("HX-Reswap", "innerHTML")
-		tmpl.ExecuteTemplate(w, "new-note-form", data)
-
+		err = tmpl.ExecuteTemplate(w, "new-note-form", data)
+		if err != nil {
+			log.Fatalf("something went wrong: %s", err.Error())
+		}
 		return
 	}
 
 	newNote := new(Note)
 	newNote.Title = title
-	newNote.Description = description
+	newNote.Description = desc
 	newNote.Rating = rating
 
 	_, err = newNote.CreateNote()
@@ -143,25 +159,31 @@ func AddNote(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("HX-Retarget", "body")
 		w.Header().Set("HX-Reswap", "beforeend")
-		tmpl.ExecuteTemplate(w, "modal", message)
-
+		err = tmpl.ExecuteTemplate(w, "modal", message)
+		if err != nil {
+			log.Fatalf("something went wrong: %s", err.Error())
+		}
 		return
 	}
 
 	w.Header().Set("HX-Location", "/")
 }
 
+// CompleteNote completes a Note
 func CompleteNote(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(r.URL.Query().Get("id"))
 
 	note := new(Note)
 	note.ID = id
-	recoveredNote, err := note.GetNoteById()
+	recoveredNote, err := note.GetNoteByID()
 	if err != nil {
 		// w.Header().Set("HX-Trigger", "{\"myEvent\":\"The requested note was not found &#x1f631;!\"}")
 		w.Header().Set("HX-Retarget", "body")
 		w.Header().Set("HX-Reswap", "beforeend")
-		tmpl.ExecuteTemplate(w, "modal", "The requested note was not found 😱!")
+		err := tmpl.ExecuteTemplate(w, "modal", "The requested note was not found 😱!")
+		if err != nil {
+			log.Fatalf("something went wrong: %s", err.Error())
+		}
 
 		return
 	}
@@ -171,9 +193,13 @@ func CompleteNote(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("something went wrong: %s", err.Error())
 	}
 
-	tmpl.ExecuteTemplate(w, "note-list-element", convertDateTime(updatedNote, r.Header.Get("X-TimeZone")))
+	err = tmpl.ExecuteTemplate(w, "note-list-element", convertDateTime(updatedNote, r.Header.Get("X-TimeZone")))
+	if err != nil {
+		log.Fatalf("something went wrong: %s", err.Error())
+	}
 }
 
+// RemoveNote removes a Note
 func RemoveNote(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(r.URL.Query().Get("id"))
 
@@ -183,7 +209,10 @@ func RemoveNote(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.Header().Set("HX-Retarget", "body")
 		w.Header().Set("HX-Reswap", "beforeend")
-		tmpl.ExecuteTemplate(w, "modal", "The requested note was not found 😱!")
+		err = tmpl.ExecuteTemplate(w, "modal", "The requested note was not found 😱!")
+		if err != nil {
+			log.Fatalf("something went wrong: %s", err.Error())
+		}
 
 		return
 	}

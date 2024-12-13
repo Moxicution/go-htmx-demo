@@ -7,6 +7,7 @@ import (
 
 var db *sql.DB
 
+// GetConnection connects to the sqlite db
 func GetConnection() *sql.DB {
 	if db != nil {
 		return db
@@ -22,6 +23,7 @@ func GetConnection() *sql.DB {
 	return db
 }
 
+// MakeMigrations migrates the db tables
 func MakeMigrations() error {
 	db := GetConnection()
 

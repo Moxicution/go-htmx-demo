@@ -8,6 +8,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// Note is the Note structure
 type Note struct {
 	ID          int       `json:"id,omitempty"`
 	Title       string    `json:"title"`
@@ -17,6 +18,7 @@ type Note struct {
 	CreatedAt   time.Time `json:"created_at,omitempty"`
 }
 
+// ConvertedNote is the ConvertedNote structure
 type ConvertedNote struct {
 	ID          int    `json:"id,omitempty"`
 	Title       string `json:"title"`
@@ -26,11 +28,11 @@ type ConvertedNote struct {
 	CreatedAt   string `json:"created_at,omitempty"`
 }
 
+// CreateNote creates a Note
 func (n *Note) CreateNote() (Note, error) {
 	db := GetConnection()
 
-	query := `INSERT INTO notes (title, description, rating, created_at)
-		VALUES(?, ?, ?, ?) RETURNING *`
+	query := `INSERT INTO notes (title, description, rating, created_at) VALUES(?, ?, ?, ?) RETURNING *`
 
 	stmt, err := db.Prepare(query)
 	if err != nil {
@@ -64,6 +66,7 @@ func (n *Note) CreateNote() (Note, error) {
 	return newNote, nil
 }
 
+// GetAllNotes gets all notes
 func (n *Note) GetAllNotes(offset int) ([]Note, error) {
 	db := GetConnection()
 	query := fmt.Sprintf("SELECT * FROM notes ORDER BY created_at DESC LIMIT 5 OFFSET %d", offset)
@@ -77,19 +80,20 @@ func (n *Note) GetAllNotes(offset int) ([]Note, error) {
 
 	notes := []Note{}
 	for rows.Next() {
-		rows.Scan(&n.ID, &n.Title, &n.Description, &n.Rating, &n.Completed, &n.CreatedAt)
-
-		notes = append(notes, *n)
+		err = rows.Scan(&n.ID, &n.Title, &n.Description, &n.Rating, &n.Completed, &n.CreatedAt)
+		if err != nil {
+			notes = append(notes, *n)
+		}
 	}
 
 	return notes, nil
 }
 
-func (n *Note) GetNoteById() (Note, error) {
+// GetNoteByID gets a Note by ID
+func (n *Note) GetNoteByID() (Note, error) {
 	db := GetConnection()
 
-	query := `SELECT * FROM notes
-		WHERE id=?`
+	query := `SELECT * FROM notes WHERE id=?`
 
 	stmt, err := db.Prepare(query)
 	if err != nil {
@@ -116,11 +120,11 @@ func (n *Note) GetNoteById() (Note, error) {
 	return recoveredNote, nil
 }
 
+// UpdateNote updates a Note
 func (n *Note) UpdateNote() (Note, error) {
 	db := GetConnection()
 
-	query := `UPDATE notes SET completed=?
-		WHERE id=? RETURNING *`
+	query := `UPDATE notes SET completed=? WHERE id=? RETURNING *`
 
 	stmt, err := db.Prepare(query)
 	if err != nil {
@@ -148,17 +152,16 @@ func (n *Note) UpdateNote() (Note, error) {
 	return updatedNote, nil
 }
 
+// DeleteNote deletes a Note
 func (n *Note) DeleteNote() error {
 	db := GetConnection()
 
-	query := `DELETE FROM notes
-		WHERE id=?`
+	query := `DELETE FROM notes WHERE id=?`
 
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		return err
 	}
-
 	defer stmt.Close()
 
 	result, err := stmt.Exec(n.ID)
